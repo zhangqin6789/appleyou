@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Apples Animation</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.size = Math.random() * 3 + 1;
+            this.speedX = Math.random() * 6 - 3;
+            this.speedY = Math.random() * 6 - 3;
+            this.gravity = 0.05;
+            this.opacity = 1;
+            this.decay = Math.random() * 0.015 + 0.005;
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.speedY += this.gravity;
+            this.size *= 0.95;
+            this.opacity -= this.decay;
+        }
+        draw() {
+            ctx.fillStyle = `rgba(${this.color},${this.opacity})`;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    class Apple {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.particles = [];
+            this.size = 30;
+            this.gravity = 0.2;
+            this.speedY = 1;
+            this.cracked = false;
+
+            for (let i = 0; i < 200; i++) {
+                const color = i < 180 ? '255,0,0' : '0,255,0';
+                this.particles.push(new Particle(this.x, this.y, color));
+            }
+        }
+
+        update() {
+            if (!this.cracked) {
+                this.y += this.speedY;
+                this.speedY += this.gravity;
+                if (this.y >= canvas.height * 0.75 - this.size) {
+                    this.cracked = true;
+                }
+            } else {
+                this.particles.forEach(particle => particle.update());
+                this.particles = this.particles.filter(particle => particle.opacity > 0);
+            }
+        }
+
+        draw() {
+            if (!this.cracked) {
+                // Draw apple body
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw apple stem
+                ctx.strokeStyle = 'brown';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - this.size);
+                ctx.lineTo(this.x, this.y - this.size - 15);
+                ctx.stroke();
+
+                // Draw leaves
+                ctx.fillStyle = 'green';
+                ctx.beginPath();
+                ctx.ellipse(this.x - 10, this.y - this.size - 10, 10, 15, Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(this.x + 10, this.y - this.size - 10, 10, 15, -Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                this.particles.forEach(particle => particle.draw());
+            }
+        }
+
+        isCracked() {
+            return this.cracked && this.particles.length === 0;
+        }
+    }
+
+    let apples = [];
+
+    function createApples() {
+        apples = [];
+        const numberOfApples = Math.floor(Math.random() * 4) + 5; // 5 to 8 apples
+        for (let i = 0; i < numberOfApples; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * -canvas.height;
+            apples.push(new Apple(x, y));
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        apples.forEach(apple => {
+            apple.update();
+            apple.draw();
+        });
+        if (apples.every(apple => apple.isCracked())) {
+            createApples();
+        }
+        requestAnimationFrame(animate);
+    }
+
+    createApples();
+    animate();
+</script>
+</body>
+</html>
